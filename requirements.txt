@@ -1,3 +1,4 @@
+psycopg2-binary
 pytest
 pytest-asyncio
 dotenv==0.9.9
