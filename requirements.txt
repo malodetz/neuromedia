@@ -1,0 +1,7 @@
+dotenv==0.9.9
+pyaes==1.6.1
+Pyrogram==2.0.106
+PySocks==1.7.1
+python-dotenv==1.1.0
+TgCrypto==1.2.5
+uvloop==0.21.0
