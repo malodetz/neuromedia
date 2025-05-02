@@ -1,0 +1,2 @@
+# neuromedia
+Brainrot broadcasting company
