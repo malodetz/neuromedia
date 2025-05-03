@@ -14,9 +14,7 @@ from src.scraper_config import (
     SESSION_NAME,
 )
 
-
-class Core:
-    pass
+import src.core as core
 
 class Scraper:
 
@@ -40,7 +38,7 @@ class Scraper:
 
 
     async def submit_to_core(self, source: str, text: str) -> None:  
-        self.core.recieve_news(text, source)
+        self.core.receive_news(text, source)
         print(f"[{source}]: {text}")
 
     async def _process_message(self, message: Message) -> None:
