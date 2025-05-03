@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+
 class Core:
     def __init__(self, db, ml_client):
         self.db = db
