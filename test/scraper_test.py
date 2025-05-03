@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import types
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 import pytest
 
 
 class DummyChat:
-    def __init__(self, chat_id: Any, title: str | None = None, first_name: str | None = None):
+    def __init__(
+        self, chat_id: Any, title: str | None = None, first_name: str | None = None
+    ):
         self.id = chat_id
         self.title = title
         self.first_name = first_name
@@ -29,13 +31,13 @@ class DummyClient:
     def __init__(self, history_map: Dict[Any, List[DummyMessage]]):
         self._history_map = history_map
 
-    async def get_chat_history(self, chat: Any, limit: int = 100):  
-        for msg in self._history_map.get(chat, [])[: limit]:
+    async def get_chat_history(self, chat: Any, limit: int = 100):
+        for msg in self._history_map.get(chat, [])[:limit]:
             yield msg
 
-    async def get_dialogs(self):  
+    async def get_dialogs(self):
         if False:
-            yield 
+            yield
         return
 
 
@@ -43,9 +45,8 @@ class DummyCore:
     def __init__(self):
         self.received: list[tuple[str, str]] = []
 
-    def receive_news(self, text: str, source: str):  
+    def receive_news(self, text: str, source: str):
         self.received.append((source, text))
-
 
 
 @pytest.mark.asyncio
@@ -68,7 +69,7 @@ async def test_prime_last_ids(monkeypatch):
         api_hash="hash",
         core=DummyCore(),
     )
-    scraper._client = DummyClient(history) 
+    scraper._client = DummyClient(history)
 
     await scraper._prime_last_ids()
 
@@ -87,14 +88,14 @@ async def test_watch_processes_only_new(monkeypatch):
 
     call_count = {"n": 0}
 
-    async def dynamic_history(chat, limit=100): 
+    async def dynamic_history(chat, limit=100):
         call_count["n"] += 1
         msgs = cycle1 if call_count["n"] == 1 else cycle2
         for m in msgs:
             yield m
 
     dummy_client = DummyClient({})
-    dummy_client.get_chat_history = dynamic_history  
+    dummy_client.get_chat_history = dynamic_history
 
     core = DummyCore()
 

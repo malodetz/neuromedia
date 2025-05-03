@@ -1,20 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from pyrogram import Client
 from pyrogram.types import Message
 
-from src.scraper_config import (
-    chats_to_follow,
-    api_id,
-    api_hash,
-    FETCH_INTERVAL,
-    SESSION_NAME,
-)
-
 from src.core import Core
+from src.scraper_config import (FETCH_INTERVAL, SESSION_NAME, api_hash, api_id,
+                                chats_to_follow)
+
 
 class Scraper:
 
@@ -36,15 +31,12 @@ class Scraper:
         self._client: Client | None = None
         self._last_ids: Dict[Any, int] = {}
 
-
-    async def submit_to_core(self, source: str, text: str) -> None:  
+    async def submit_to_core(self, source: str, text: str) -> None:
         self.core.receive_news(text, source)
         print(f"[{source}]: {text}")
 
     async def _process_message(self, message: Message) -> None:
-        source = (
-            message.chat.title or message.chat.first_name or str(message.chat.id)
-        )
+        source = message.chat.title or message.chat.first_name or str(message.chat.id)
         text = message.text or message.caption or "[no text]"
         await self.submit_to_core(source, text)
         print(f"[{source}]: {text} ({message.date})")
@@ -83,13 +75,12 @@ class Scraper:
             await asyncio.sleep(self.fetch_interval)
 
     async def run(self) -> None:
-        async with Client(
-            self.session_name, self.api_id, self.api_hash
-        ) as client:
+        async with Client(self.session_name, self.api_id, self.api_hash) as client:
             self._client = client
             async for _ in client.get_dialogs():
                 pass
             await self._watch_loop()
+
 
 def get_scraper(core: Core) -> Scraper:
     watcher = Scraper(
@@ -98,7 +89,7 @@ def get_scraper(core: Core) -> Scraper:
         api_hash=api_hash,
         session_name=SESSION_NAME,
         fetch_interval=FETCH_INTERVAL,
-        core=core
+        core=core,
     )
 
     asyncio.run(watcher.run())
