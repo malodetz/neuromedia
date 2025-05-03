@@ -14,7 +14,7 @@ from src.scraper_config import (
     SESSION_NAME,
 )
 
-import src.core as core
+from src.core import Core
 
 class Scraper:
 
