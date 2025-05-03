@@ -43,7 +43,7 @@ class DummyCore:
     def __init__(self):
         self.received: list[tuple[str, str]] = []
 
-    def recieve_news(self, text: str, source: str):  
+    def receive_news(self, text: str, source: str):  
         self.received.append((source, text))
 
 
