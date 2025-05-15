@@ -16,30 +16,36 @@ class Core:
     async def send_to_ml(self, text: str, source: str):
         message = {"text": text, "source": source}
 
-        # TODO: wait for Serega-s ML COMP.
-
         news_id = await self.ml_client.submit(text, source)
         self.pending_tasks[news_id] = message
         print(f"[Core] Submitted to ML, got ID: {news_id}")
 
         asyncio.create_task(self.poll_ml_status(news_id))
 
-    async def poll_ml_status(self, news_id: str):
-        while True:
-            # TODO: wait for Serega-s ML COMP.
+    async def poll_ml_status(self, news_id: str, max_attempts: int = 120, delay: float = 5.0):
+        try:
+            for attempt in range(max_attempts):
+                logging.info(f"[Core] Pulling news {news_id}, attempt №{attempt}")
 
-            status = await self.ml_client.get_status(news_id)
+                status = await self.ml_client.get_status(news_id)
 
-            if status["state"] == "processing":
-                await asyncio.sleep(1)
-            elif status["state"] == "drop":
-                print(f"[Core] News {news_id} dropped.")
-                del self.pending_tasks[news_id]
-                return
-            elif status["state"] == "ok":
-                rewritten = status["rewritten_text"]
-                tags = status["tags"]
-                await self.db.store(news_id, rewritten, tags)
-                print(f"[Core] Stored to DB: {news_id}")
-                del self.pending_tasks[news_id]
-                return
+                if status["state"] == "processing":
+                    await asyncio.sleep(1)
+                elif status["state"] == "drop":
+                    print(f"[Core] News {news_id} dropped.")
+                    del self.pending_tasks[news_id]
+                    return
+                elif status["state"] == "ok":
+                    rewritten = status["rewritten_text"]
+                    tags = status["tags"]
+                    await self.db.store(news_id, rewritten, tags)
+                    print(f"[Core] Stored to DB: {news_id}")
+                    del self.pending_tasks[news_id]
+                    return
+            
+            logging.warning(f"[Core] News {news_id} timed out after {max_attempts} attempts.")
+            del self.pending_tasks[news_id]
+        except asyncio.CancelledError:
+            logging.warning(f"[Core] Polling for {news_id} was cancelled.")
+            self.pending_tasks.pop(news_id, None)
+            raise
