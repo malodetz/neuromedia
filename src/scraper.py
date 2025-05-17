@@ -9,7 +9,9 @@ from pyrogram.types import Message
 from src.core import Core
 from src.scraper_config import (FETCH_INTERVAL, SESSION_NAME, api_hash, api_id,
                                 chats_to_follow)
-from src.utils import logger    
+from src.utils import get_logger
+
+logger = get_logger("Scraper")
 
 
 class Scraper:
