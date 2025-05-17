@@ -2,10 +2,15 @@ from typing import List, Optional, Tuple
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from src.utils import get_logger
+
+logger = get_logger("DB")
 
 
 class PostgreStorage:
     def __init__(self, dbname, user, password, host="localhost", port=5433):
+        logger.info("DB init")
+
         self.conn = psycopg2.connect(
             dbname=dbname,
             user=user,
@@ -17,6 +22,8 @@ class PostgreStorage:
         self._create_table()
 
     def _create_table(self):
+        logger.info("Create table records")
+
         with self.conn.cursor() as cur:
             cur.execute(
                 """
@@ -30,6 +37,8 @@ class PostgreStorage:
             self.conn.commit()
 
     def store(self, record_id: str, text: str, tags: Optional[List[str]] = None):
+        logger.info("Store {record_id}")
+
         with self.conn.cursor() as cur:
             cur.execute(
                 """
@@ -42,6 +51,8 @@ class PostgreStorage:
             self.conn.commit()
 
     def get(self, record_id: str) -> Optional[Tuple[str, str, List[str]]]:
+        logger.info("Get by ID {record_id}")
+
         with self.conn.cursor() as cur:
             cur.execute(
                 "SELECT id, text, tags FROM records WHERE id = %s;", (record_id,)
@@ -49,6 +60,8 @@ class PostgreStorage:
             return cur.fetchone()
 
     def get_by_tag(self, tag: str):
+        logger.info("Get by tag {tag}")
+
         with self.conn.cursor() as cur:
             cur.execute(
                 "SELECT id, text, tags FROM records WHERE %s = ANY(tags);", (tag,)
@@ -56,9 +69,13 @@ class PostgreStorage:
             return cur.fetchall()
 
     def delete(self, record_id: str):
+        logger.info("Delete {record_id}")
+
         with self.conn.cursor() as cur:
             cur.execute("DELETE FROM records WHERE id = %s;", (record_id,))
             self.conn.commit()
 
     def close(self):
+        logger.info("Close connection to PostgreSQL")
+
         self.conn.close()

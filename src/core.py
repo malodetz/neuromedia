@@ -22,7 +22,7 @@ class Core:
 
         news_id = await self.ml_client.submit(text, source)
         self.pending_tasks[news_id] = message
-        print(f"Submitted to ML, got ID: {news_id}")
+        logger.info(f"Submitted to ML, got ID: {news_id}")
 
         asyncio.create_task(self.poll_ml_status(news_id))
 
@@ -36,14 +36,14 @@ class Core:
                 if status["state"] == "processing":
                     await asyncio.sleep(1)
                 elif status["state"] == "drop":
-                    print(f"News {news_id} dropped.")
+                    logger.info(f"News {news_id} dropped.")
                     del self.pending_tasks[news_id]
                     return
                 elif status["state"] == "ok":
                     rewritten = status["rewritten_text"]
                     tags = status["tags"]
                     await self.db.store(news_id, rewritten, tags)
-                    print(f"Stored to DB: {news_id}")
+                    logger.info(f"Stored to DB: {news_id}")
                     del self.pending_tasks[news_id]
                     return
             
