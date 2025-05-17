@@ -8,7 +8,7 @@ from pyrogram.types import Message
 
 from src.core import Core
 from src.scraper_config import (FETCH_INTERVAL, SESSION_NAME, api_hash, api_id,
-                                chats_to_follow)
+                                chats_to_follow, logger)
 
 
 class Scraper:
@@ -30,19 +30,22 @@ class Scraper:
         self.core = core
         self._client: Client | None = None
         self._last_ids: Dict[Any, int] = {}
+        logger.info("Scraper initialized")
 
     async def submit_to_core(self, source: str, text: str) -> None:
         self.core.receive_news(text, source)
-        print(f"[{source}]: {text}")
+        logger.info(f"[{source}]: {text}")
 
     async def _process_message(self, message: Message) -> None:
-        source = message.chat.title or message.chat.first_name or str(message.chat.id)
+        source = message.chat.title or message.chat.first_name or str(
+            message.chat.id)
         text = message.text or message.caption or "[no text]"
         await self.submit_to_core(source, text)
-        print(f"[{source}]: {text} ({message.date})")
+        logger.info(f"[{source}]: {text} ({message.date})")
 
     async def _prime_last_ids(self) -> None:
         assert self._client is not None
+        logger.info("Priming last message IDs")
         for chat in self.chats:
             try:
                 async for msg in self._client.get_chat_history(chat, limit=1):
@@ -51,12 +54,13 @@ class Scraper:
                 else:
                     self._last_ids[chat] = 0
             except Exception as exc:
-                print(f"Init fetch error for {chat}: {exc}")
+                logger.error(f"Init fetch error for {chat}: {exc}")
                 self._last_ids[chat] = 0
 
     async def _watch_loop(self) -> None:
         assert self._client is not None
         await self._prime_last_ids()
+        logger.info("Starting watch loop")
 
         while True:
             for chat in self.chats:
@@ -67,22 +71,29 @@ class Scraper:
                             break
                         new_messages.append(msg)
 
+                    if new_messages:
+                        logger.info(
+                            f"Found {len(new_messages)} new messages in {chat}")
+
                     for msg in reversed(new_messages):
                         await self._process_message(msg)
                         self._last_ids[chat] = msg.id
                 except Exception as exc:
-                    print(f"Fetch error for {chat}: {exc}")
+                    logger.error(f"Fetch error for {chat}: {exc}")
             await asyncio.sleep(self.fetch_interval)
 
     async def run(self) -> None:
+        logger.info("Starting Scraper")
         async with Client(self.session_name, self.api_id, self.api_hash) as client:
             self._client = client
+            logger.info("Connected to Telegram")
             async for _ in client.get_dialogs():
                 pass
             await self._watch_loop()
 
 
 def get_scraper(core: Core) -> Scraper:
+    logger.info("Initializing scraper")
     watcher = Scraper(
         chats=chats_to_follow,
         api_id=api_id,
