@@ -43,7 +43,6 @@ class Core:
                     del self.pending_tasks[news_id]
                     return
                 elif status["state"] == "ok":
-                    print(status)
                     rewritten = status["rewritten_text"]
                     tags = status["tags"]
                     self.db.store(news_id, rewritten, tags)
