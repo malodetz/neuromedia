@@ -6,9 +6,9 @@ from typing import Any, Dict, List
 from pyrogram import Client
 from pyrogram.types import Message
 
+from src.config import (FETCH_INTERVAL, SESSION_NAME, api_hash, api_id,
+                        chats_to_follow)
 from src.core import Core
-from src.scraper_config import (FETCH_INTERVAL, SESSION_NAME, api_hash, api_id,
-                                chats_to_follow)
 from src.utils import get_logger
 
 logger = get_logger("Scraper")
@@ -36,12 +36,11 @@ class Scraper:
         logger.info("Scraper initialized")
 
     async def submit_to_core(self, source: str, text: str) -> None:
-        self.core.receive_news(text, source)
+        await self.core.receive_news(text, source)
         logger.info(f"[{source}]: {text}")
 
     async def _process_message(self, message: Message) -> None:
-        source = message.chat.title or message.chat.first_name or str(
-            message.chat.id)
+        source = message.chat.title or message.chat.first_name or str(message.chat.id)
         text = message.text or message.caption or "[no text]"
         await self.submit_to_core(source, text)
         logger.info(f"[{source}]: {text} ({message.date})")
@@ -75,8 +74,7 @@ class Scraper:
                         new_messages.append(msg)
 
                     if new_messages:
-                        logger.info(
-                            f"Found {len(new_messages)} new messages in {chat}")
+                        logger.info(f"Found {len(new_messages)} new messages in {chat}")
 
                     for msg in reversed(new_messages):
                         await self._process_message(msg)

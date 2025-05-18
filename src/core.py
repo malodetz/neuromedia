@@ -1,4 +1,5 @@
 import asyncio
+
 from src.utils import get_logger
 
 logger = get_logger("Core")
@@ -26,7 +27,9 @@ class Core:
 
         asyncio.create_task(self.poll_ml_status(news_id))
 
-    async def poll_ml_status(self, news_id: str, max_attempts: int = 120, delay: float = 5.0):
+    async def poll_ml_status(
+        self, news_id: str, max_attempts: int = 120, delay: float = 5.0
+    ):
         try:
             for attempt in range(max_attempts):
                 logger.info(f"Pulling news {news_id}, attempt №{attempt}")
@@ -40,13 +43,14 @@ class Core:
                     del self.pending_tasks[news_id]
                     return
                 elif status["state"] == "ok":
+                    print(status)
                     rewritten = status["rewritten_text"]
                     tags = status["tags"]
-                    await self.db.store(news_id, rewritten, tags)
+                    self.db.store(news_id, rewritten, tags)
                     logger.info(f"Stored to DB: {news_id}")
                     del self.pending_tasks[news_id]
                     return
-            
+
             logger.warning(f"News {news_id} timed out after {max_attempts} attempts.")
             del self.pending_tasks[news_id]
         except asyncio.CancelledError:
