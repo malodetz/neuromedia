@@ -8,6 +8,7 @@ PySocks==1.7.1
 python-dotenv==1.1.0
 TgCrypto==1.2.5
 uvloop==0.21.0
+prometheus-client==0.22.0
 langchain
 langchain-community
 langchain-ollama
