@@ -25,9 +25,7 @@ async def test_submit_returns_uuid_and_initial_state(client, monkeypatch):
 
     task_id = await client.submit("some text", "source-A")
 
-    assert re.fullmatch(
-        r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", task_id
-    )
+    assert isinstance(task_id, int)
 
     assert client.tasks[task_id]["state"] == "processing"
     status = await client.get_status(task_id)
@@ -70,5 +68,5 @@ async def test_process_task_failure_sets_drop_state(client, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_get_status_not_found(client):
-    status = await client.get_status("00000000-0000-0000-0000-000000000000")
+    status = await client.get_status(0)
     assert status == {"state": "not_found"}
