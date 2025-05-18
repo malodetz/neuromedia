@@ -77,7 +77,7 @@ class MLClient:
 
         except Exception as e:
             self.tasks[task_id]["state"] = "drop"
-            print(f"Error processing task {task_id}: {e}")
+            logger.error(f"Error processing task {task_id}: {e}")
 
         logger.info(f"Finished processing task {task_id}")
 
