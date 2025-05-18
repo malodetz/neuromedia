@@ -5,6 +5,10 @@ from typing import Any, Dict
 from ollama import chat
 from pydantic import BaseModel, Field
 
+from src.utils import get_logger
+
+logger = get_logger("ML CLient")
+
 
 class NewsTags(BaseModel):
     tags: list[str] = Field(description="List of most important entities in text")
@@ -13,9 +17,12 @@ class NewsTags(BaseModel):
 class MLClient:
     def __init__(self, db):
         self.db = db
+        self.llm = "gemma3:12b"
         self.tasks = {}
         self._counter = 0
         self._lock = threading.Lock()
+
+        logger.info("ML client started")
 
     async def submit(self, text: str, source: str) -> int:
         """Submit text for rewriting and return an integer ID"""
@@ -30,6 +37,7 @@ class MLClient:
             "rewritten_text": None,
             "tags": [],
         }
+        logger.info(f"Received update. Id = {task_id}, text = {text}")
 
         asyncio.create_task(self._process_task(task_id))
 
@@ -39,7 +47,7 @@ class MLClient:
         template = f"Extract 3-5 key entities from this news text: {text}"
         response = chat(
             messages=[{"role": "user", "content": template}],
-            model="gemma3:12b",
+            model=self.llm,
             format=NewsTags.model_json_schema(),
         )
         tags = NewsTags.model_validate_json(response.message.content)
@@ -49,7 +57,7 @@ class MLClient:
         template = f"Rewrite the following news text to be more concise Remove all the emotions and make it more objective. Original text: {text}"
         response = chat(
             messages=[{"role": "user", "content": template}],
-            model="gemma3:12b",
+            model=self.llm,
         )
         return response.message.content
 
@@ -60,7 +68,9 @@ class MLClient:
 
         try:
             tags = self._get_tags(text)
+            logger.info(f"Generated tags. Id = {task_id}, tags = {tags}")
             rewritten_text = self._rewrite_text(text)
+            logger.info(f"Text rewritten. Id = {task_id}, new_text = {rewritten_text}")
             self.tasks[task_id]["state"] = "ok"
             self.tasks[task_id]["rewritten_text"] = rewritten_text
             self.tasks[task_id]["tags"] = tags
@@ -68,6 +78,8 @@ class MLClient:
         except Exception as e:
             self.tasks[task_id]["state"] = "drop"
             print(f"Error processing task {task_id}: {e}")
+
+        logger.info(f"Finished processing task {task_id}")
 
     async def get_status(self, task_id: int) -> Dict[str, Any]:
         """Get the current status of a task"""
