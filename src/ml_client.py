@@ -1,10 +1,9 @@
 import asyncio
-import uuid
-from typing import Any, Dict, Optional
+import threading
+from typing import Any, Dict
 
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field
-from langchain_ollama.llms import OllamaLLM
+from ollama import chat
+from pydantic import BaseModel, Field
 
 
 class NewsTags(BaseModel):
@@ -14,12 +13,15 @@ class NewsTags(BaseModel):
 class MLClient:
     def __init__(self, db):
         self.db = db
-        self.llm = OllamaLLM(model="gemma3:12b")
         self.tasks = {}
+        self._counter = 0
+        self._lock = threading.Lock()
 
-    async def submit(self, text: str, source: str) -> str:
-        """Submit text for rewriting and return a UUID"""
-        task_id = str(uuid.uuid4())
+    async def submit(self, text: str, source: str) -> int:
+        """Submit text for rewriting and return an integer ID"""
+        with self._lock:
+            task_id = self._counter
+            self._counter += 1
 
         self.tasks[task_id] = {
             "text": text,
@@ -35,18 +37,23 @@ class MLClient:
 
     def _get_tags(self, text: str) -> list[str]:
         template = f"Extract 3-5 key entities from this news text: {text}"
-        prompt = ChatPromptTemplate.from_template(template)
-        chain = prompt | self.llm.with_structured_output(NewsTags)
-        result = chain.invoke({"text": text})
-        return result.tags
+        response = chat(
+            messages=[{"role": "user", "content": template}],
+            model="gemma3:12b",
+            format=NewsTags.model_json_schema(),
+        )
+        tags = NewsTags.model_validate_json(response.message.content)
+        return tags.tags
 
     def _rewrite_text(self, text: str) -> str:
         template = f"Rewrite the following news text to be more concise Remove all the emotions and make it more objective. Original text: {text}"
-        prompt = ChatPromptTemplate.from_template(template)
-        chain = prompt | self.llm
-        return chain.invoke({"text": text})
+        response = chat(
+            messages=[{"role": "user", "content": template}],
+            model="gemma3:12b",
+        )
+        return response.message.content
 
-    async def _process_task(self, task_id: str):
+    async def _process_task(self, task_id: int):
         """Process the task and update its status"""
         task = self.tasks[task_id]
         text = task["text"]
@@ -62,7 +69,7 @@ class MLClient:
             self.tasks[task_id]["state"] = "drop"
             print(f"Error processing task {task_id}: {e}")
 
-    async def get_status(self, task_id: str) -> Dict[str, Any]:
+    async def get_status(self, task_id: int) -> Dict[str, Any]:
         """Get the current status of a task"""
         if task_id not in self.tasks:
             return {"state": "not_found"}

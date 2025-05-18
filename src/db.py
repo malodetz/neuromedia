@@ -2,6 +2,7 @@ from typing import List, Optional, Tuple
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
+
 from src.utils import get_logger
 
 logger = get_logger("DB")
