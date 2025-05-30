@@ -14,10 +14,15 @@ class NewsTags(BaseModel):
     tags: list[str] = Field(description="List of most important entities in text")
 
 
+class RewrittenNews(BaseModel):
+    rewritten_text: str = Field(description="Rewritten news text")
+    comment: str = Field(description="Comments in news modifcication")
+
+
 class MLClient:
     def __init__(self, db):
         self.db = db
-        self.llm = "gemma3:12b"
+        self.llm = "gemma3:4b"
         self.tasks = {}
         self._counter = 0
         self._lock = threading.Lock()
@@ -53,13 +58,18 @@ class MLClient:
         tags = NewsTags.model_validate_json(response.message.content)
         return tags.tags
 
-    def _rewrite_text(self, text: str) -> str:
-        template = f"Rewrite the following news text to be more concise Remove all the emotions and make it more objective. Original text: {text}"
+    def _rewrite_text(self, text: str) -> RewrittenNews:
+        template = f"""
+Rewrite the following news text to be more concise. Proide rewritten text and comments on changes in 2 separate fields in JSON format.
+
+Original text:
+{text}"""
         response = chat(
             messages=[{"role": "user", "content": template}],
             model=self.llm,
+            format=RewrittenNews.model_json_schema(),
         )
-        return response.message.content
+        return RewrittenNews.model_validate_json(response.message.content)
 
     async def _process_task(self, task_id: int):
         """Process the task and update its status"""
@@ -69,10 +79,10 @@ class MLClient:
         try:
             tags = self._get_tags(text)
             logger.info(f"Generated tags. Id = {task_id}, tags = {tags}")
-            rewritten_text = self._rewrite_text(text)
-            logger.info(f"Text rewritten. Id = {task_id}, new_text = {rewritten_text}")
+            rewritten_news = self._rewrite_text(text)
+            logger.info(f"Text rewritten. Id = {task_id}, new_text = {rewritten_news.rewritten_text}")
             self.tasks[task_id]["state"] = "ok"
-            self.tasks[task_id]["rewritten_text"] = rewritten_text
+            self.tasks[task_id]["rewritten_text"] = rewritten_news.rewritten_text
             self.tasks[task_id]["tags"] = tags
 
         except Exception as e:

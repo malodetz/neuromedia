@@ -14,3 +14,4 @@ langchain-community
 langchain-ollama
 black
 isort
+streamlit
