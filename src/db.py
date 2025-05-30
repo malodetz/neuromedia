@@ -26,9 +26,10 @@ class PostgreStorage:
         logger.info("Create table records")
 
         with self.conn.cursor() as cur:
+            cur.execute("DROP TABLE IF EXISTS records;")
             cur.execute(
                 """
-                CREATE TABLE IF NOT EXISTS records (
+                CREATE TABLE records (
                     id INTEGER PRIMARY KEY,
                     text TEXT NOT NULL,
                     tags TEXT[]
@@ -67,6 +68,13 @@ class PostgreStorage:
             cur.execute(
                 "SELECT id, text, tags FROM records WHERE %s = ANY(tags);", (tag,)
             )
+            return cur.fetchall()
+
+    def get_all(self):
+        logger.info("Get all records")
+
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT id, text, tags FROM records ORDER BY id DESC;")
             return cur.fetchall()
 
     def delete(self, record_id: str):
