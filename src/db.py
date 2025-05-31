@@ -67,9 +67,10 @@ class PostgreStorage:
         with self.conn.cursor() as cur:
             cur.execute("SELECT MAX(id) FROM records;")
             result = dict(cur.fetchone())
-            max_id = result["max"]
+            max_id = result["max"] if result["max"] is not None else 0
             logger.info(f"Maximum ID: {max_id}")
             return max_id
+        return 0
 
     def get_by_tag(self, tag: str):
         logger.info("Get by tag {tag}")

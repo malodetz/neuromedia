@@ -53,7 +53,15 @@ class MLClient:
         return task_id
 
     def _get_tags(self, text: str) -> list[str]:
-        template = f"Extract 3-5 key entities from the following news text. Return only a JSON object with the required format.\n\nNews text: {text}"
+        template = f"""
+Extract 3-5 key entities from the following news text.
+Return only a JSON object with the required format.
+
+News text:
+{text}
+
+Extracted tags MUST be in English language.
+"""
         response = chat(
             messages=[{"role": "user", "content": template}],
             model=self.llm,
@@ -79,6 +87,7 @@ Instructions:
 - Avoid duplicating information already present in context news
 - Set is_duplicate to true if this news essentially repeats information from context
 - Provide comments explaining your changes
+- Rewritten text MUST be traslated to English language
 
 Return only a JSON object with the required format.
 """
@@ -109,7 +118,7 @@ Return only a JSON object with the required format.
 
             rewritten_news = self._rewrite_text(text, similar_news)
             logger.info(
-                f"Text rewritten. Id = {task_id}, new_text = {rewritten_news.rewritten_text}, is_duplicate = {rewritten_news.is_duplicate}"
+                f"Text rewritten. Id = {task_id}, new_text = {rewritten_news.rewritten_text}, is_duplicate = {rewritten_news.is_duplicate}, comment = {rewritten_news.comment}"
             )
 
             self.tasks[task_id]["rewritten_text"] = rewritten_news.rewritten_text
