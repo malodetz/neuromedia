@@ -11,14 +11,15 @@ logger = get_logger("ML CLient")
 
 
 class NewsTags(BaseModel):
-    tags: list[str] = Field(
-        description="List of most important entities in text")
+    tags: list[str] = Field(description="List of most important entities in text")
 
 
 class RewrittenNews(BaseModel):
     rewritten_text: str = Field(description="Rewritten news text")
     comment: str = Field(description="Comments in news modification")
-    is_duplicate: bool = Field(default=False, description="Indicates if the news is a duplicate")
+    is_duplicate: bool = Field(
+        default=False, description="Indicates if the news is a duplicate"
+    )
 
 
 class MLClient:
@@ -26,7 +27,8 @@ class MLClient:
         self.db = db
         self.llm = "gemma3:12b"
         self.tasks = {}
-        self._counter = 0
+        max_id = self.db.get_max_id()
+        self._counter = max_id + 1  # Start from max_id + 1
         self._lock = threading.Lock()
 
         logger.info("ML client started")
@@ -96,18 +98,20 @@ Return only a JSON object with the required format.
             tags = self._get_tags(text)
             logger.info(f"Generated tags. Id = {task_id}, tags = {tags}")
 
-            all_news = list(dict(news) for tag in tags for news in self.db.get_by_tag(tag))
+            all_news = list(
+                dict(news) for tag in tags for news in self.db.get_by_tag(tag)
+            )
             unique_news_dict = {}
             for news in all_news:
-                unique_news_dict[news['id']] = news
+                unique_news_dict[news["id"]] = news
             unique_news = list(unique_news_dict.values())
-            similar_news = sorted(unique_news, key=lambda x: x['id'])[-10:]
+            similar_news = sorted(unique_news, key=lambda x: x["id"])[-10:]
 
             rewritten_news = self._rewrite_text(text, similar_news)
             logger.info(
-                f"Text rewritten. Id = {task_id}, new_text = {rewritten_news.rewritten_text}, is_duplicate = {rewritten_news.is_duplicate}")
-            
-            
+                f"Text rewritten. Id = {task_id}, new_text = {rewritten_news.rewritten_text}, is_duplicate = {rewritten_news.is_duplicate}"
+            )
+
             self.tasks[task_id]["rewritten_text"] = rewritten_news.rewritten_text
             self.tasks[task_id]["tags"] = tags
             if rewritten_news.is_duplicate:
