@@ -26,10 +26,9 @@ class PostgreStorage:
         logger.info("Create table records")
 
         with self.conn.cursor() as cur:
-            cur.execute("DROP TABLE IF EXISTS records;")
             cur.execute(
                 """
-                CREATE TABLE records (
+                CREATE TABLE IF NOT EXISTS records(
                     id INTEGER PRIMARY KEY,
                     text TEXT NOT NULL,
                     tags TEXT[]

@@ -8,7 +8,7 @@ from src.scraper import get_scraper
 
 if __name__ == "__main__":
     start_http_server(PROMETHEUS_PORT)
-    
+
     storage = PostgreStorage(dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
     ml_client = MLClient(db=storage)
     core = Core(db=storage, ml_client=ml_client)
