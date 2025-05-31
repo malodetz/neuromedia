@@ -6,8 +6,7 @@ from typing import Any, Dict, List
 from pyrogram import Client
 from pyrogram.types import Message
 
-from src.config import (FETCH_INTERVAL, SESSION_NAME, api_hash, api_id,
-                        chats_to_follow)
+from src.config import FETCH_INTERVAL, SESSION_NAME, api_hash, api_id, chats_to_follow
 from src.core import Core
 from src.utils import get_logger
 

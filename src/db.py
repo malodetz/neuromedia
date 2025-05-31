@@ -60,6 +60,17 @@ class PostgreStorage:
             )
             return cur.fetchone()
 
+    def get_max_id(self) -> int:
+        """Get the maximum ID from the records table"""
+        logger.info("Getting maximum ID")
+
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT MAX(id) FROM records;")
+            result = dict(cur.fetchone())
+            max_id = result["max"]
+            logger.info(f"Maximum ID: {max_id}")
+            return max_id
+
     def get_by_tag(self, tag: str):
         logger.info("Get by tag {tag}")
 
